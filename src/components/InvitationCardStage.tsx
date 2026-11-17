@@ -1,14 +1,17 @@
 import { Expand, GraduationCap, Heart, Sparkles } from 'lucide-react';
 import { useState, type MouseEvent } from 'react';
-import { EVENT_INFO, INVITATION_IMAGE_PATH } from '../utils/invitationLogic';
+import type { EditableEventConfig } from '../types/invitation';
+import { INVITATION_IMAGE_PATH } from '../utils/invitationLogic';
 
 interface InvitationCardStageProps {
   juniorName: string;
+  eventConfig: EditableEventConfig;
   onExpandCard: () => void;
 }
 
 export function InvitationCardStage({
   juniorName,
+  eventConfig,
   onExpandCard,
 }: InvitationCardStageProps) {
   const [viewMode, setViewMode] = useState<'poster' | 'interactive'>('poster');
@@ -101,7 +104,7 @@ export function InvitationCardStage({
               <div className="relative overflow-hidden rounded-xl">
                 <img
                   src={INVITATION_IMAGE_PATH}
-                  alt={`Fresher Party Invitation Card for ${juniorName}, Organised by B.Ed. Second Year on 19/11/26`}
+                  alt={`Fresher Party Invitation Card for ${juniorName}, ${eventConfig.organiser} on ${eventConfig.dateDisplay}`}
                   referrerPolicy="no-referrer"
                   onError={() => setImageFailed(true)}
                   className="block h-auto w-full object-cover"
@@ -109,9 +112,12 @@ export function InvitationCardStage({
               </div>
               <div className="mt-3 flex flex-wrap items-center justify-between gap-2 px-1 text-xs text-[#6E4B56]">
                 <span>
-                  Prepared for <strong className="font-semibold text-[#2B1820]">{juniorName}</strong>
+                  Prepared for{' '}
+                  <strong className="font-semibold text-[#2B1820]">
+                    {juniorName}
+                  </strong>
                 </span>
-                <span>{EVENT_INFO.organiser}</span>
+                <span>{eventConfig.organiser}</span>
               </div>
             </div>
           ) : (
@@ -121,11 +127,11 @@ export function InvitationCardStage({
               </div>
 
               <p className="mt-4 text-xs font-semibold tracking-wider text-[#8C5B2B]">
-                {EVENT_INFO.kicker}
+                {eventConfig.kicker}
               </p>
 
               <h2 className="mt-2 font-display text-4xl font-bold italic text-[#7B1633] sm:text-5xl">
-                {EVENT_INFO.title}
+                {eventConfig.title}
               </h2>
 
               <p className="mt-5 font-display text-2xl font-semibold text-[#9C1C40]">
@@ -133,25 +139,31 @@ export function InvitationCardStage({
               </p>
 
               <p className="mx-auto mt-4 max-w-md text-sm leading-relaxed text-[#3E242C]">
-                {EVENT_INFO.subGreeting}
+                {eventConfig.subGreeting}
               </p>
 
               <p className="mx-auto mt-3 max-w-md text-sm leading-relaxed text-[#5C3A45]">
-                {EVENT_INFO.inviteLine}
+                {eventConfig.inviteLine}
               </p>
 
               <div className="mx-auto mt-7 max-w-md space-y-2.5 border-y border-[#E8D5C8] py-5 text-sm text-[#2B1820]">
                 <div className="flex items-center justify-between gap-4">
                   <span className="font-medium text-[#6E4B56]">Date</span>
-                  <span className="font-semibold tabular-nums">{EVENT_INFO.dateDisplay}</span>
+                  <span className="font-semibold tabular-nums">
+                    {eventConfig.dateDisplay}
+                  </span>
                 </div>
                 <div className="flex items-center justify-between gap-4">
                   <span className="font-medium text-[#6E4B56]">Time</span>
-                  <span className="font-semibold tabular-nums">{EVENT_INFO.timeDisplay}</span>
+                  <span className="font-semibold tabular-nums">
+                    {eventConfig.timeDisplay}
+                  </span>
                 </div>
                 <div className="flex items-center justify-between gap-4">
                   <span className="font-medium text-[#6E4B56]">Venue</span>
-                  <span className="font-semibold">{EVENT_INFO.venueDisplay}</span>
+                  <span className="font-semibold">
+                    {eventConfig.venueDisplay}
+                  </span>
                 </div>
               </div>
 
@@ -162,18 +174,18 @@ export function InvitationCardStage({
                 <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
                   <div className="rounded-xl bg-[#FDF2F6] p-3.5">
                     <p className="text-xs font-semibold text-[#7B1633]">
-                      {EVENT_INFO.dressCode.girls.label}
+                      {eventConfig.dressCode.girls.label}
                     </p>
                     <p className="mt-1 text-sm font-medium text-[#2B1820]">
-                      {EVENT_INFO.dressCode.girls.attire}
+                      {eventConfig.dressCode.girls.attire}
                     </p>
                   </div>
                   <div className="rounded-xl bg-[#F5F2F3] p-3.5">
                     <p className="text-xs font-semibold text-[#2B1820]">
-                      {EVENT_INFO.dressCode.boys.label}
+                      {eventConfig.dressCode.boys.label}
                     </p>
                     <p className="mt-1 text-sm font-medium text-[#2B1820]">
-                      {EVENT_INFO.dressCode.boys.attire}
+                      {eventConfig.dressCode.boys.attire}
                     </p>
                   </div>
                 </div>
@@ -181,12 +193,12 @@ export function InvitationCardStage({
 
               <p className="mt-6 flex items-center justify-center gap-1.5 font-display text-base italic text-[#7B1633]">
                 <Heart className="h-4 w-4" aria-hidden="true" />
-                <span>{EVENT_INFO.closingLine}</span>
+                <span>{eventConfig.closingLine}</span>
                 <Sparkles className="h-4 w-4" aria-hidden="true" />
               </p>
 
               <p className="mt-4 text-xs font-semibold text-[#8C5B2B]">
-                {EVENT_INFO.organiser}
+                {eventConfig.organiser}
               </p>
             </div>
           )}

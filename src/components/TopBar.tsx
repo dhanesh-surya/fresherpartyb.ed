@@ -1,21 +1,28 @@
-import { GraduationCap, LogOut } from 'lucide-react';
+import { GraduationCap, LogOut, ShieldCheck } from 'lucide-react';
 import { useState } from 'react';
 import { COLLEGE_BRAND, COLLEGE_LOGO_PATH } from '../utils/invitationLogic';
 
 interface TopBarProps {
   juniorName: string | null;
+  seniorAdminName: string | null;
   onSwitchJunior: () => void;
+  onExitSeniorAdmin: () => void;
 }
 
-export function TopBar({ juniorName, onSwitchJunior }: TopBarProps) {
+export function TopBar({
+  juniorName,
+  seniorAdminName,
+  onSwitchJunior,
+  onExitSeniorAdmin,
+}: TopBarProps) {
   const [logoFailed, setLogoFailed] = useState(false);
 
   return (
     <header className="sticky top-0 z-30 border-b border-[#E8D5C8] bg-[#FDF8F5]/95 backdrop-blur-sm">
-      <div className="mx-auto flex max-w-[1200px] items-center justify-between gap-8 px-6 py-3.5">
+      <div className="mx-auto flex max-w-[1200px] items-center justify-between gap-3 px-4 py-3.5 sm:gap-8 sm:px-6">
         <a
           href="#top"
-          className="inline-flex items-center gap-2.5 font-display text-lg font-semibold tracking-tight text-[#7B1633] whitespace-nowrap shrink-0 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#7B1633]"
+          className="inline-flex items-center gap-2 font-display text-base font-semibold tracking-tight text-[#7B1633] whitespace-nowrap shrink-0 sm:gap-2.5 sm:text-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#7B1633]"
         >
           {!logoFailed ? (
             <img
@@ -31,7 +38,18 @@ export function TopBar({ juniorName, onSwitchJunior }: TopBarProps) {
           <span>{COLLEGE_BRAND.shortName}</span>
         </a>
 
-        {juniorName ? (
+        {seniorAdminName ? (
+          <div className="flex items-center gap-3 shrink-0">
+            <button
+              type="button"
+              onClick={onExitSeniorAdmin}
+              className="inline-flex items-center gap-2 rounded-lg border border-[#D8B9A6] bg-white px-4 py-2 text-xs font-semibold text-[#2B1820] whitespace-nowrap shrink-0 transition-colors duration-150 hover:border-[#7B1633] hover:text-[#7B1633] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#7B1633]"
+            >
+              <ShieldCheck className="h-3.5 w-3.5" aria-hidden="true" />
+              <span>Exit Senior Admin</span>
+            </button>
+          </div>
+        ) : juniorName ? (
           <>
             <nav
               aria-label="Invitation sections"

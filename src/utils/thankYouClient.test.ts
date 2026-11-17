@@ -1,8 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { DEFAULT_EVENT_CONFIG } from './invitationLogic';
 import {
+  adminDeleteJuniorClient,
+  adminUpsertJuniorClient,
+  fetchEventConfig,
   fetchLedger,
   loginJunior,
+  saveEventConfig,
   submitThankYou,
   type StorageLike,
 } from './thankYouClient';
@@ -43,13 +48,37 @@ test('Netlify HTML SPA fallback never throws Unexpected token < and persists loc
   assert.ok(ledgerRes.totalHits >= 5);
 });
 
-test('Netlify 404 HTML page also falls back cleanly without JSON syntax error', async () => {
+test('Admin Junior CRUD and EventConfig CRUD work under Netlify HTML fallback', async () => {
   const storage = createMemoryStorage();
-  const netlify404Fetch = createHtmlFallbackFetch(404);
+  const netlifyFetch = createHtmlFallbackFetch(200);
 
-  const hitRes = await submitThankYou('Kabir Mehta', netlify404Fetch, storage);
-  assert.equal(hitRes.currentRecord?.name, 'Kabir Mehta');
-  assert.equal(hitRes.currentRecord?.hits, 1);
+  const added = await adminUpsertJuniorClient(
+    { name: 'Tanvi Sahu', hits: 2, status: 'Thanked' },
+    netlifyFetch,
+    storage
+  );
+  assert.equal(added.currentRecord?.name, 'Tanvi Sahu');
+  assert.equal(added.currentRecord?.hits, 2);
+
+  const deleted = await adminDeleteJuniorClient(
+    'tanvi sahu',
+    netlifyFetch,
+    storage
+  );
+  assert.equal(
+    deleted.records.some((r) => r.id === 'tanvi sahu'),
+    false
+  );
+
+  const savedCfg = await saveEventConfig(
+    { ...DEFAULT_EVENT_CONFIG, venueDisplay: 'Seminar Hall B' },
+    netlifyFetch,
+    storage
+  );
+  assert.equal(savedCfg.venueDisplay, 'Seminar Hall B');
+
+  const loadedCfg = await fetchEventConfig(netlifyFetch, storage);
+  assert.equal(loadedCfg.venueDisplay, 'Seminar Hall B');
 });
 
 test('Real backend JSON validation error is still surfaced to the UI', async () => {

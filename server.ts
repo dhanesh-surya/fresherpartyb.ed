@@ -3,12 +3,16 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createServer as createViteServer } from 'vite';
-import type { ThankYouRecord } from './src/types/invitation';
+import type { EditableEventConfig, ThankYouRecord } from './src/types/invitation';
 import {
+  adminDeleteJunior,
+  adminUpsertJunior,
   applyThankYouHit,
+  DEFAULT_EVENT_CONFIG,
   DEFAULT_SEED_RECORDS,
   normalizeJuniorName,
   registerJuniorLogin,
+  sanitizeEventConfig,
   summarizeThankYouLedger,
 } from './src/utils/invitationLogic';
 
@@ -17,6 +21,7 @@ const __dirname = path.dirname(__filename);
 
 const DATA_DIR = path.join(__dirname, '.data');
 const DATA_FILE = path.join(DATA_DIR, 'thank-you-hits.json');
+const CONFIG_FILE = path.join(DATA_DIR, 'event-config.json');
 
 function ensureStore(): ThankYouRecord[] {
   if (!fs.existsSync(DATA_DIR)) {
@@ -52,6 +57,39 @@ function saveStore(records: ThankYouRecord[]): void {
     fs.mkdirSync(DATA_DIR, { recursive: true });
   }
   fs.writeFileSync(DATA_FILE, JSON.stringify(records, null, 2), 'utf8');
+}
+
+function ensureConfig(): EditableEventConfig {
+  if (!fs.existsSync(DATA_DIR)) {
+    fs.mkdirSync(DATA_DIR, { recursive: true });
+  }
+  if (!fs.existsSync(CONFIG_FILE)) {
+    fs.writeFileSync(
+      CONFIG_FILE,
+      JSON.stringify(DEFAULT_EVENT_CONFIG, null, 2),
+      'utf8'
+    );
+    return DEFAULT_EVENT_CONFIG;
+  }
+  try {
+    const raw = fs.readFileSync(CONFIG_FILE, 'utf8');
+    const parsed = JSON.parse(raw) as Partial<EditableEventConfig>;
+    return sanitizeEventConfig(parsed);
+  } catch {
+    fs.writeFileSync(
+      CONFIG_FILE,
+      JSON.stringify(DEFAULT_EVENT_CONFIG, null, 2),
+      'utf8'
+    );
+    return DEFAULT_EVENT_CONFIG;
+  }
+}
+
+function saveConfig(config: EditableEventConfig): void {
+  if (!fs.existsSync(DATA_DIR)) {
+    fs.mkdirSync(DATA_DIR, { recursive: true });
+  }
+  fs.writeFileSync(CONFIG_FILE, JSON.stringify(config, null, 2), 'utf8');
 }
 
 async function startServer() {
@@ -132,6 +170,101 @@ async function startServer() {
       pendingCount: summary.pendingCount,
       currentRecord,
     });
+  });
+
+  app.post('/api/juniors', (req, res) => {
+    try {
+      const records = ensureStore();
+      const { records: updated, record } = adminUpsertJunior(
+        records,
+        {
+          name: typeof req.body?.name === 'string' ? req.body.name : '',
+          hits: Number(req.body?.hits ?? 0),
+          status: req.body?.status === 'Thanked' ? 'Thanked' : 'Pending',
+        },
+        new Date().toISOString()
+      );
+      saveStore(updated);
+      const summary = summarizeThankYouLedger(updated, null, 'all', '');
+      res.json({
+        records: summary.allRecords,
+        totalHits: summary.totalHits,
+        thankedCount: summary.thankedCount,
+        pendingCount: summary.pendingCount,
+        currentRecord: record,
+      });
+    } catch (err) {
+      res.status(400).json({
+        error: err instanceof Error ? err.message : 'Unable to save Junior.',
+      });
+    }
+  });
+
+  app.put('/api/juniors/:id', (req, res) => {
+    try {
+      const targetId = decodeURIComponent(req.params.id);
+      const records = ensureStore();
+      const { records: updated, record } = adminUpsertJunior(
+        records,
+        {
+          targetId,
+          name: typeof req.body?.name === 'string' ? req.body.name : '',
+          hits: Number(req.body?.hits ?? 0),
+          status: req.body?.status === 'Thanked' ? 'Thanked' : 'Pending',
+        },
+        new Date().toISOString()
+      );
+      saveStore(updated);
+      const summary = summarizeThankYouLedger(updated, null, 'all', '');
+      res.json({
+        records: summary.allRecords,
+        totalHits: summary.totalHits,
+        thankedCount: summary.thankedCount,
+        pendingCount: summary.pendingCount,
+        currentRecord: record,
+      });
+    } catch (err) {
+      res.status(400).json({
+        error: err instanceof Error ? err.message : 'Unable to update Junior.',
+      });
+    }
+  });
+
+  app.delete('/api/juniors/:id', (req, res) => {
+    try {
+      const targetId = decodeURIComponent(req.params.id);
+      const records = ensureStore();
+      const updated = adminDeleteJunior(records, targetId);
+      saveStore(updated);
+      const summary = summarizeThankYouLedger(updated, null, 'all', '');
+      res.json({
+        records: summary.allRecords,
+        totalHits: summary.totalHits,
+        thankedCount: summary.thankedCount,
+        pendingCount: summary.pendingCount,
+        currentRecord: null,
+      });
+    } catch (err) {
+      res.status(404).json({
+        error: err instanceof Error ? err.message : 'Junior not found.',
+      });
+    }
+  });
+
+  app.get('/api/config', (_req, res) => {
+    res.json(ensureConfig());
+  });
+
+  app.put('/api/config', (req, res) => {
+    const next = sanitizeEventConfig(req.body as Partial<EditableEventConfig>);
+    saveConfig(next);
+    res.json(next);
+  });
+
+  app.delete('/api/config', (_req, res) => {
+    const reset = sanitizeEventConfig(DEFAULT_EVENT_CONFIG);
+    saveConfig(reset);
+    res.json(reset);
   });
 
   const isProd = process.env.NODE_ENV === 'production';

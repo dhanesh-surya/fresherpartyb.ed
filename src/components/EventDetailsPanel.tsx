@@ -1,17 +1,17 @@
 import { CalendarPlus, Check, Clock, Copy, MapPin } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import type { DressCodeGroup } from '../types/invitation';
-import {
-  buildCalendarIcs,
-  EVENT_INFO,
-  getEventCountdown,
-} from '../utils/invitationLogic';
+import type { DressCodeGroup, EditableEventConfig } from '../types/invitation';
+import { buildCalendarIcs, getEventCountdown } from '../utils/invitationLogic';
 
 interface EventDetailsPanelProps {
   juniorName: string;
+  eventConfig: EditableEventConfig;
 }
 
-export function EventDetailsPanel({ juniorName }: EventDetailsPanelProps) {
+export function EventDetailsPanel({
+  juniorName,
+  eventConfig,
+}: EventDetailsPanelProps) {
   const [dressGroup, setDressGroup] = useState<DressCodeGroup>('girls');
   const [copiedVenue, setCopiedVenue] = useState(false);
   const [countdown, setCountdown] = useState(() =>
@@ -26,7 +26,7 @@ export function EventDetailsPanel({ juniorName }: EventDetailsPanelProps) {
   }, []);
 
   const handleCopyVenue = async () => {
-    const text = `Fresher Party (${EVENT_INFO.organiser}) · ${EVENT_INFO.dateDisplay} · ${EVENT_INFO.timeDisplay} · ${EVENT_INFO.venueDisplay}`;
+    const text = `${eventConfig.eventTitle} (${eventConfig.organiser}) · ${eventConfig.dateDisplay} · ${eventConfig.timeDisplay} · ${eventConfig.venueDisplay}`;
     try {
       await navigator.clipboard.writeText(text);
       setCopiedVenue(true);
@@ -37,8 +37,10 @@ export function EventDetailsPanel({ juniorName }: EventDetailsPanelProps) {
   };
 
   const handleDownloadCalendar = () => {
-    const icsContent = buildCalendarIcs(juniorName);
-    const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
+    const icsContent = buildCalendarIcs(juniorName, eventConfig);
+    const blob = new Blob([icsContent], {
+      type: 'text/calendar;charset=utf-8',
+    });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
@@ -49,19 +51,19 @@ export function EventDetailsPanel({ juniorName }: EventDetailsPanelProps) {
     URL.revokeObjectURL(url);
   };
 
-  const activeDress = EVENT_INFO.dressCode[dressGroup];
+  const activeDress = eventConfig.dressCode[dressGroup];
 
   return (
     <div className="space-y-8">
       <section aria-label="Personalized greeting">
         <p className="text-xs font-semibold tracking-wide text-[#8C5B2B]">
-          {EVENT_INFO.kicker} · {EVENT_INFO.organiser}
+          {eventConfig.kicker} · {eventConfig.organiser}
         </p>
         <h1 className="mt-2 font-display text-[clamp(2rem,3.4vw,3rem)] font-bold leading-[1.12] tracking-tight text-[#2B1820] [text-wrap:balance]">
           Dear {juniorName},
         </h1>
         <p className="mt-3 text-base leading-relaxed text-[#5C3A45]">
-          {EVENT_INFO.subGreeting} {EVENT_INFO.inviteLine}
+          {eventConfig.subGreeting} {eventConfig.inviteLine}
         </p>
       </section>
 
@@ -105,11 +107,14 @@ export function EventDetailsPanel({ juniorName }: EventDetailsPanelProps) {
         <dl className="mt-5 space-y-3.5 text-sm">
           <div className="flex items-start justify-between gap-4">
             <dt className="flex items-center gap-2 font-medium text-[#6E4B56]">
-              <CalendarPlus className="h-4 w-4 text-[#7B1633]" aria-hidden="true" />
+              <CalendarPlus
+                className="h-4 w-4 text-[#7B1633]"
+                aria-hidden="true"
+              />
               <span>Date</span>
             </dt>
             <dd className="text-right font-semibold text-[#2B1820] tabular-nums">
-              {EVENT_INFO.dateDisplay} ({EVENT_INFO.dateFull})
+              {eventConfig.dateDisplay} ({eventConfig.dateFull})
             </dd>
           </div>
           <div className="flex items-start justify-between gap-4">
@@ -118,7 +123,7 @@ export function EventDetailsPanel({ juniorName }: EventDetailsPanelProps) {
               <span>Time</span>
             </dt>
             <dd className="text-right font-semibold text-[#2B1820] tabular-nums">
-              {EVENT_INFO.timeDisplay}
+              {eventConfig.timeDisplay}
             </dd>
           </div>
           <div className="flex items-start justify-between gap-4">
@@ -127,7 +132,7 @@ export function EventDetailsPanel({ juniorName }: EventDetailsPanelProps) {
               <span>Venue</span>
             </dt>
             <dd className="text-right font-semibold text-[#2B1820]">
-              {EVENT_INFO.venueDisplay}
+              {eventConfig.venueDisplay}
             </dd>
           </div>
         </dl>
@@ -216,7 +221,10 @@ export function EventDetailsPanel({ juniorName }: EventDetailsPanelProps) {
                 {activeDress.attire}
               </p>
             </div>
-            <div className="flex items-center gap-2" aria-label="Recommended fabric colors">
+            <div
+              className="flex items-center gap-2"
+              aria-label="Recommended fabric colors"
+            >
               {activeDress.swatches.map((swatch) => (
                 <div key={swatch.name} className="flex items-center gap-1.5">
                   <span
@@ -232,6 +240,39 @@ export function EventDetailsPanel({ juniorName }: EventDetailsPanelProps) {
           <p className="mt-2.5 text-sm text-[#5C3A45]">{activeDress.detail}</p>
         </div>
       </section>
+
+      {eventConfig.program.length > 0 && (
+        <section
+          aria-label="Event celebration program"
+          className="border-t border-[#E8D5C8] pt-7"
+        >
+          <h2 className="font-display text-xl font-semibold text-[#2B1820]">
+            Celebration Lineup
+          </h2>
+          <ol className="mt-4 divide-y divide-[#F1E4DC] rounded-xl border border-[#E8D5C8] bg-white px-5">
+            {eventConfig.program.map((slot) => (
+              <li
+                key={slot.id}
+                className="flex flex-col gap-1 py-3.5 sm:flex-row sm:items-baseline sm:justify-between sm:gap-4"
+              >
+                <div>
+                  <p className="text-sm font-semibold text-[#2B1820]">
+                    {slot.title}
+                  </p>
+                  {slot.detail && (
+                    <p className="mt-0.5 text-xs text-[#6E4B56]">
+                      {slot.detail}
+                    </p>
+                  )}
+                </div>
+                <span className="text-xs font-semibold text-[#7B1633] tabular-nums shrink-0">
+                  {slot.time}
+                </span>
+              </li>
+            ))}
+          </ol>
+        </section>
+      )}
     </div>
   );
 }

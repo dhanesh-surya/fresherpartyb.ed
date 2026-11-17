@@ -70,10 +70,16 @@ export function ThankYouSection({
               type="button"
               onClick={handleThankYouClick}
               disabled={isSending}
-              className="inline-flex items-center gap-2.5 rounded-xl bg-[#7B1633] px-7 py-4 text-base font-semibold text-white shadow-sm transition-all duration-150 hover:bg-[#621028] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-65 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#7B1633]"
+              className={`inline-flex items-center gap-2.5 rounded-xl bg-[#7B1633] px-7 py-4 text-base font-semibold text-white shadow-sm transition-all duration-150 hover:bg-[#621028] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-65 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#7B1633] ${
+                burstKey > 0 ? 'animate-neon-ring' : ''
+              }`}
             >
               <Heart
-                className={`h-5 w-5 ${hasThanked ? 'fill-current' : ''}`}
+                className={`h-5 w-5 ${
+                  hasThanked
+                    ? 'fill-[#FF5CCD] text-[#FF85D0] drop-shadow-[0_0_8px_rgba(255,46,147,0.85)]'
+                    : ''
+                }`}
                 aria-hidden="true"
               />
               <span>{isSending ? 'Sending Thank You...' : 'Thank You'}</span>
@@ -85,9 +91,15 @@ export function ThankYouSection({
                 aria-hidden="true"
                 className="pointer-events-none absolute -top-2 left-1/2 flex -translate-x-1/2 gap-3"
               >
-                <Heart className="animate-petal-burst h-4 w-4 fill-[#D96B8A] text-[#D96B8A]" />
-                <Heart className="animate-petal-burst h-5 w-5 fill-[#7B1633] text-[#7B1633]" />
-                <Heart className="animate-petal-burst h-4 w-4 fill-[#C89B4B] text-[#C89B4B]" />
+                <span className="animate-petal-burst text-lg drop-shadow-[0_0_10px_#ff2e93]">
+                  💖
+                </span>
+                <span className="animate-petal-burst text-xl drop-shadow-[0_0_12px_#ff007f]">
+                  ❤️
+                </span>
+                <span className="animate-petal-burst text-lg drop-shadow-[0_0_10px_#ff6ec7]">
+                  💕
+                </span>
               </div>
             )}
           </div>

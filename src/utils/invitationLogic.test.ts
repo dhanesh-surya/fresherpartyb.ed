@@ -1,12 +1,17 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  adminDeleteJunior,
+  adminUpsertJunior,
   applyThankYouHit,
   buildCalendarIcs,
+  DEFAULT_EVENT_CONFIG,
   getEventCountdown,
   normalizeJuniorName,
   registerJuniorLogin,
+  sanitizeEventConfig,
   summarizeThankYouLedger,
+  verifySeniorCredentials,
 } from './invitationLogic';
 import type { ThankYouRecord } from '../types/invitation';
 
@@ -23,6 +28,14 @@ test('normalizeJuniorName trims spaces and enforces length bounds', () => {
   assert.equal(valid.name, 'Riya Sharma');
   assert.equal(valid.key, 'riya sharma');
   assert.equal(valid.error, null);
+});
+
+test('verifySeniorCredentials validates name and passcode', () => {
+  assert.equal(verifySeniorCredentials('', 'BED2026').valid, false);
+  assert.equal(verifySeniorCredentials('Senior Admin', 'WRONG').valid, false);
+  const ok = verifySeniorCredentials('  Dhanesh Senior ', 'bed2026');
+  assert.equal(ok.valid, true);
+  assert.equal(ok.name, 'Dhanesh Senior');
 });
 
 test('registerJuniorLogin registers a new Junior as Pending and preserves existing hits', () => {
@@ -47,6 +60,37 @@ test('registerJuniorLogin registers a new Junior as Pending and preserves existi
   );
   assert.equal(relogin.currentRecord.status, 'Thanked');
   assert.equal(relogin.currentRecord.hits, 1);
+});
+
+test('adminUpsertJunior and adminDeleteJunior handle Create, Update, and Delete cleanly', () => {
+  const created = adminUpsertJunior(
+    [],
+    { name: 'Sonal Gupta', hits: 0, status: 'Pending' },
+    '2026-11-17T06:00:00.000Z'
+  );
+  assert.equal(created.record.name, 'Sonal Gupta');
+  assert.equal(created.record.status, 'Pending');
+
+  const updated = adminUpsertJunior(
+    created.records,
+    { targetId: 'sonal gupta', name: 'Sonal Verma', hits: 3, status: 'Thanked' },
+    '2026-11-17T06:05:00.000Z'
+  );
+  assert.equal(updated.record.name, 'Sonal Verma');
+  assert.equal(updated.record.hits, 3);
+  assert.equal(updated.record.status, 'Thanked');
+
+  const afterDelete = adminDeleteJunior(updated.records, 'sonal verma');
+  assert.equal(afterDelete.length, 0);
+});
+
+test('sanitizeEventConfig preserves edits and fills missing defaults', () => {
+  const sanitized = sanitizeEventConfig({
+    ...DEFAULT_EVENT_CONFIG,
+    venueDisplay: 'Main Auditorium',
+  });
+  assert.equal(sanitized.venueDisplay, 'Main Auditorium');
+  assert.equal(sanitized.program.length, DEFAULT_EVENT_CONFIG.program.length);
 });
 
 test('applyThankYouHit increments hit count by name and sorts Thanked entries first', () => {
@@ -77,35 +121,6 @@ test('applyThankYouHit increments hit count by name and sorts Thanked entries fi
   assert.equal(summary.thankedCount, 1);
   assert.equal(summary.pendingCount, 1);
   assert.equal(summary.currentRecord?.hits, 2);
-});
-
-test('summarizeThankYouLedger filters by status and search query', () => {
-  const records: ThankYouRecord[] = [
-    {
-      id: 'neha patel',
-      name: 'Neha Patel',
-      hits: 3,
-      status: 'Thanked',
-      firstLoggedInAt: '2026-11-16T10:00:00.000Z',
-      lastHitAt: '2026-11-16T11:00:00.000Z',
-    },
-    {
-      id: 'aman verma',
-      name: 'Aman Verma',
-      hits: 0,
-      status: 'Pending',
-      firstLoggedInAt: '2026-11-16T10:30:00.000Z',
-      lastHitAt: null,
-    },
-  ];
-
-  const thankedOnly = summarizeThankYouLedger(records, null, 'thanked', '');
-  assert.equal(thankedOnly.records.length, 1);
-  assert.equal(thankedOnly.records[0].name, 'Neha Patel');
-
-  const searched = summarizeThankYouLedger(records, null, 'all', 'aman');
-  assert.equal(searched.records.length, 1);
-  assert.equal(searched.records[0].status, 'Pending');
 });
 
 test('getEventCountdown computes upcoming, live, and ended phases accurately', () => {

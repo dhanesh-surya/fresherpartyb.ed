@@ -1,7 +1,9 @@
 import type {
   CountdownSnapshot,
+  EditableEventConfig,
   LedgerFilter,
   ThankYouRecord,
+  ThankYouStatus,
 } from '../types/invitation';
 
 export const INVITATION_IMAGE_PATH =
@@ -16,6 +18,8 @@ export const COLLEGE_BRAND = {
     'Organized by Department of Education, Chaitanya College Education, Pamgarh',
   shortName: 'Chaitanya College, Pamgarh',
 } as const;
+
+export const SENIOR_PASSCODE = 'BED2026';
 
 export const DEFAULT_SEED_RECORDS: ThankYouRecord[] = [
   {
@@ -44,10 +48,11 @@ export const DEFAULT_SEED_RECORDS: ThankYouRecord[] = [
   },
 ];
 
-export const EVENT_INFO = {
+export const DEFAULT_EVENT_CONFIG: EditableEventConfig = {
+  eventTitle: COLLEGE_BRAND.eventTitle,
+  organizedBy: COLLEGE_BRAND.organizedBy,
   kicker: 'A Heartfelt Invitation',
   title: 'Fresher Party',
-  greetingPrefix: 'Dear',
   subGreeting:
     'Get ready to embark on a new journey with new friends, new experiences and endless memories!',
   inviteLine:
@@ -79,7 +84,35 @@ export const EVENT_INFO = {
       ],
     },
   },
-} as const;
+  program: [
+    {
+      id: 'prog-welcome',
+      time: '10:00 AM',
+      title: 'Welcome & Lamp Lighting',
+      detail: 'Tilak welcome for Juniors and opening address by Department of Education.',
+    },
+    {
+      id: 'prog-talent',
+      time: '11:30 AM',
+      title: 'Introduction & Talent Showcase',
+      detail: 'Ramp walk, cultural performances, and fun ice-breaker games.',
+    },
+    {
+      id: 'prog-lunch',
+      time: '01:30 PM',
+      title: 'Festive Lunch & Photo Booth',
+      detail: 'Batch memories and group portraits at Hall / Room No. 30.',
+    },
+    {
+      id: 'prog-crown',
+      time: '02:45 PM',
+      title: 'Mr. & Ms. Fresher Crowning',
+      detail: 'Title awards, vote of thanks, and celebration finale.',
+    },
+  ],
+};
+
+export const EVENT_INFO = DEFAULT_EVENT_CONFIG;
 
 export interface NameValidationResult {
   valid: boolean;
@@ -120,6 +153,28 @@ export function normalizeJuniorName(raw: string): NameValidationResult {
     key: cleaned.toLowerCase(),
     error: null,
   };
+}
+
+export function verifySeniorCredentials(
+  seniorName: string,
+  passcode: string
+): { valid: boolean; name: string; error: string | null } {
+  const nameResult = normalizeJuniorName(seniorName);
+  if (!nameResult.valid) {
+    return {
+      valid: false,
+      name: '',
+      error: 'Please enter your Senior / Admin name.',
+    };
+  }
+  if (passcode.trim().toUpperCase() !== SENIOR_PASSCODE) {
+    return {
+      valid: false,
+      name: nameResult.name,
+      error: 'Invalid Senior passcode. Please check and try again.',
+    };
+  }
+  return { valid: true, name: nameResult.name, error: null };
 }
 
 export function sortThankYouRecords(records: ThankYouRecord[]): ThankYouRecord[] {
@@ -214,6 +269,139 @@ export function applyThankYouHit(
   };
 }
 
+export function adminUpsertJunior(
+  records: ThankYouRecord[],
+  payload: {
+    targetId?: string;
+    name: string;
+    hits: number;
+    status: ThankYouStatus;
+  },
+  nowIso: string
+): { records: ThankYouRecord[]; record: ThankYouRecord } {
+  const validation = normalizeJuniorName(payload.name);
+  if (!validation.valid) {
+    throw new Error(validation.error ?? 'Invalid Junior name');
+  }
+
+  const safeHits = Math.max(0, Math.floor(Number(payload.hits) || 0));
+  const resolvedStatus: ThankYouStatus =
+    safeHits > 0 ? 'Thanked' : payload.status === 'Thanked' ? 'Thanked' : 'Pending';
+  const finalHits = resolvedStatus === 'Thanked' && safeHits === 0 ? 1 : safeHits;
+
+  const targetKey = (payload.targetId ?? validation.key).toLowerCase();
+  const existing = records.find((r) => r.id === targetKey);
+  const duplicate = records.find(
+    (r) => r.id === validation.key && r.id !== targetKey
+  );
+  if (duplicate) {
+    throw new Error(`A Junior named "${duplicate.name}" already exists.`);
+  }
+
+  const record: ThankYouRecord = {
+    id: validation.key,
+    name: validation.name,
+    hits: resolvedStatus === 'Pending' ? 0 : finalHits,
+    status: resolvedStatus,
+    firstLoggedInAt: existing?.firstLoggedInAt ?? nowIso,
+    lastHitAt:
+      resolvedStatus === 'Thanked' ? existing?.lastHitAt ?? nowIso : null,
+  };
+
+  const nextRecords = existing
+    ? records.map((r) => (r.id === targetKey ? record : r))
+    : [record, ...records];
+
+  return {
+    records: sortThankYouRecords(nextRecords),
+    record,
+  };
+}
+
+export function adminDeleteJunior(
+  records: ThankYouRecord[],
+  targetId: string
+): ThankYouRecord[] {
+  const key = targetId.trim().toLowerCase();
+  const next = records.filter((r) => r.id !== key);
+  if (next.length === records.length) {
+    throw new Error('Junior record not found.');
+  }
+  return sortThankYouRecords(next);
+}
+
+export function sanitizeEventConfig(
+  incoming: Partial<EditableEventConfig> | null | undefined
+): EditableEventConfig {
+  if (!incoming || typeof incoming !== 'object') {
+    return structuredClone(DEFAULT_EVENT_CONFIG);
+  }
+  const girls = incoming.dressCode?.girls;
+  const boys = incoming.dressCode?.boys;
+  const program = Array.isArray(incoming.program)
+    ? incoming.program
+        .filter(
+          (item) =>
+            item &&
+            typeof item.title === 'string' &&
+            item.title.trim().length > 0
+        )
+        .map((item, idx) => ({
+          id: item.id?.trim() || `prog-${idx + 1}`,
+          time: item.time?.trim() || 'TBA',
+          title: item.title.trim(),
+          detail: item.detail?.trim() || '',
+        }))
+    : DEFAULT_EVENT_CONFIG.program;
+
+  return {
+    eventTitle:
+      incoming.eventTitle?.trim() || DEFAULT_EVENT_CONFIG.eventTitle,
+    organizedBy:
+      incoming.organizedBy?.trim() || DEFAULT_EVENT_CONFIG.organizedBy,
+    kicker: incoming.kicker?.trim() || DEFAULT_EVENT_CONFIG.kicker,
+    title: incoming.title?.trim() || DEFAULT_EVENT_CONFIG.title,
+    subGreeting:
+      incoming.subGreeting?.trim() || DEFAULT_EVENT_CONFIG.subGreeting,
+    inviteLine: incoming.inviteLine?.trim() || DEFAULT_EVENT_CONFIG.inviteLine,
+    closingLine:
+      incoming.closingLine?.trim() || DEFAULT_EVENT_CONFIG.closingLine,
+    dateDisplay:
+      incoming.dateDisplay?.trim() || DEFAULT_EVENT_CONFIG.dateDisplay,
+    dateFull: incoming.dateFull?.trim() || DEFAULT_EVENT_CONFIG.dateFull,
+    timeDisplay:
+      incoming.timeDisplay?.trim() || DEFAULT_EVENT_CONFIG.timeDisplay,
+    venueDisplay:
+      incoming.venueDisplay?.trim() || DEFAULT_EVENT_CONFIG.venueDisplay,
+    organiser: incoming.organiser?.trim() || DEFAULT_EVENT_CONFIG.organiser,
+    dressCode: {
+      girls: {
+        label: girls?.label?.trim() || DEFAULT_EVENT_CONFIG.dressCode.girls.label,
+        attire:
+          girls?.attire?.trim() || DEFAULT_EVENT_CONFIG.dressCode.girls.attire,
+        detail:
+          girls?.detail?.trim() || DEFAULT_EVENT_CONFIG.dressCode.girls.detail,
+        swatches:
+          Array.isArray(girls?.swatches) && girls.swatches.length > 0
+            ? girls.swatches
+            : DEFAULT_EVENT_CONFIG.dressCode.girls.swatches,
+      },
+      boys: {
+        label: boys?.label?.trim() || DEFAULT_EVENT_CONFIG.dressCode.boys.label,
+        attire:
+          boys?.attire?.trim() || DEFAULT_EVENT_CONFIG.dressCode.boys.attire,
+        detail:
+          boys?.detail?.trim() || DEFAULT_EVENT_CONFIG.dressCode.boys.detail,
+        swatches:
+          Array.isArray(boys?.swatches) && boys.swatches.length > 0
+            ? boys.swatches
+            : DEFAULT_EVENT_CONFIG.dressCode.boys.swatches,
+      },
+    },
+    program,
+  };
+}
+
 export function summarizeThankYouLedger(
   records: ThankYouRecord[],
   currentName: string | null,
@@ -260,7 +448,7 @@ export function getEventCountdown(now: Date): CountdownSnapshot {
       days: 0,
       hours: 0,
       minutes: 0,
-      summary: 'Celebration in progress today at Hall / Room No. 30',
+      summary: 'Celebration in progress today',
     };
   }
 
@@ -289,20 +477,23 @@ export function getEventCountdown(now: Date): CountdownSnapshot {
   };
 }
 
-export function buildCalendarIcs(guestName: string): string {
+export function buildCalendarIcs(
+  guestName: string,
+  config: EditableEventConfig = DEFAULT_EVENT_CONFIG
+): string {
   const safeGuest = guestName.replace(/[\r\n]/g, ' ').trim() || 'Junior';
   return [
     'BEGIN:VCALENDAR',
     'VERSION:2.0',
-    'PRODID:-//BEd Second Year//Fresher Party Invitation//EN',
+    'PRODID:-//Chaitanya College Pamgarh//Fresher Party 2026//EN',
     'BEGIN:VEVENT',
     'UID:bed-fresher-party-2026-11-19@campus',
     'DTSTAMP:20261116T100000Z',
     'DTSTART:20261119T100000',
     'DTEND:20261119T160000',
-    'SUMMARY:Fresher Party — Organised by B.Ed. Second Year',
-    'LOCATION:Hall / Room No. 30',
-    `DESCRIPTION:Dear ${safeGuest}\\, You are cordially invited to the Fresher Party organised by B.Ed. Second Year. Formal Dress Code: Girls - Light Pink | Boys - Black Shirt & Grey / Cream Pant.`,
+    `SUMMARY:${config.eventTitle} — ${config.organiser}`,
+    `LOCATION:${config.venueDisplay}`,
+    `DESCRIPTION:Dear ${safeGuest}\\, ${config.inviteLine} Formal Dress Code: ${config.dressCode.girls.label} - ${config.dressCode.girls.attire} | ${config.dressCode.boys.label} - ${config.dressCode.boys.attire}.`,
     'END:VEVENT',
     'END:VCALENDAR',
   ].join('\r\n');

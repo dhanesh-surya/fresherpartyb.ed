@@ -28,3 +28,42 @@ export interface CountdownSnapshot {
   minutes: number;
   summary: string;
 }
+
+export interface DressCodeSwatch {
+  name: string;
+  hex: string;
+}
+
+export interface DressCodeProfile {
+  label: string;
+  attire: string;
+  detail: string;
+  swatches: DressCodeSwatch[];
+}
+
+export interface ProgramItem {
+  id: string;
+  time: string;
+  title: string;
+  detail: string;
+}
+
+export interface EditableEventConfig {
+  eventTitle: string;
+  organizedBy: string;
+  kicker: string;
+  title: string;
+  subGreeting: string;
+  inviteLine: string;
+  closingLine: string;
+  dateDisplay: string;
+  dateFull: string;
+  timeDisplay: string;
+  venueDisplay: string;
+  organiser: string;
+  dressCode: {
+    girls: DressCodeProfile;
+    boys: DressCodeProfile;
+  };
+  program: ProgramItem[];
+}
