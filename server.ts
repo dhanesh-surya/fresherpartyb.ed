@@ -1,0 +1,179 @@
+import express from 'express';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { createServer as createViteServer } from 'vite';
+import type { ThankYouRecord } from './src/types/invitation';
+import {
+  applyThankYouHit,
+  normalizeJuniorName,
+  registerJuniorLogin,
+  summarizeThankYouLedger,
+} from './src/utils/invitationLogic';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const DATA_DIR = path.join(__dirname, '.data');
+const DATA_FILE = path.join(DATA_DIR, 'thank-you-hits.json');
+
+const SEED_RECORDS: ThankYouRecord[] = [
+  {
+    id: 'ananya verma',
+    name: 'Ananya Verma',
+    hits: 2,
+    status: 'Thanked',
+    firstLoggedInAt: '2026-11-16T09:15:00.000Z',
+    lastHitAt: '2026-11-16T10:30:00.000Z',
+  },
+  {
+    id: 'rohan deshmukh',
+    name: 'Rohan Deshmukh',
+    hits: 1,
+    status: 'Thanked',
+    firstLoggedInAt: '2026-11-16T09:45:00.000Z',
+    lastHitAt: '2026-11-16T09:50:00.000Z',
+  },
+  {
+    id: 'priya nair',
+    name: 'Priya Nair',
+    hits: 1,
+    status: 'Thanked',
+    firstLoggedInAt: '2026-11-16T08:40:00.000Z',
+    lastHitAt: '2026-11-16T08:42:00.000Z',
+  },
+];
+
+function ensureStore(): ThankYouRecord[] {
+  if (!fs.existsSync(DATA_DIR)) {
+    fs.mkdirSync(DATA_DIR, { recursive: true });
+  }
+  if (!fs.existsSync(DATA_FILE)) {
+    fs.writeFileSync(DATA_FILE, JSON.stringify(SEED_RECORDS, null, 2), 'utf8');
+    return SEED_RECORDS;
+  }
+  try {
+    const raw = fs.readFileSync(DATA_FILE, 'utf8');
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed)) {
+      return parsed as ThankYouRecord[];
+    }
+  } catch {
+    // Fall back to seed records if file is unreadable
+  }
+  fs.writeFileSync(DATA_FILE, JSON.stringify(SEED_RECORDS, null, 2), 'utf8');
+  return SEED_RECORDS;
+}
+
+function saveStore(records: ThankYouRecord[]): void {
+  if (!fs.existsSync(DATA_DIR)) {
+    fs.mkdirSync(DATA_DIR, { recursive: true });
+  }
+  fs.writeFileSync(DATA_FILE, JSON.stringify(records, null, 2), 'utf8');
+}
+
+async function startServer() {
+  const app = express();
+  app.use(express.json());
+
+  app.get('/api/thank-you', (req, res) => {
+    const currentName =
+      typeof req.query.name === 'string' ? req.query.name : null;
+    const records = ensureStore();
+    const summary = summarizeThankYouLedger(records, currentName, 'all', '');
+    res.json({
+      records: summary.allRecords,
+      totalHits: summary.totalHits,
+      thankedCount: summary.thankedCount,
+      pendingCount: summary.pendingCount,
+      currentRecord: summary.currentRecord,
+    });
+  });
+
+  app.post('/api/login', (req, res) => {
+    const rawName = typeof req.body?.name === 'string' ? req.body.name : '';
+    const validation = normalizeJuniorName(rawName);
+    if (!validation.valid) {
+      res.status(400).json({ error: validation.error });
+      return;
+    }
+
+    const records = ensureStore();
+    const { records: updated, currentRecord } = registerJuniorLogin(
+      records,
+      validation.name,
+      new Date().toISOString()
+    );
+    saveStore(updated);
+
+    const summary = summarizeThankYouLedger(
+      updated,
+      currentRecord.name,
+      'all',
+      ''
+    );
+    res.json({
+      records: summary.allRecords,
+      totalHits: summary.totalHits,
+      thankedCount: summary.thankedCount,
+      pendingCount: summary.pendingCount,
+      currentRecord,
+    });
+  });
+
+  app.post('/api/thank-you', (req, res) => {
+    const rawName = typeof req.body?.name === 'string' ? req.body.name : '';
+    const validation = normalizeJuniorName(rawName);
+    if (!validation.valid) {
+      res.status(400).json({ error: validation.error });
+      return;
+    }
+
+    const records = ensureStore();
+    const { records: updated, currentRecord } = applyThankYouHit(
+      records,
+      validation.name,
+      new Date().toISOString()
+    );
+    saveStore(updated);
+
+    const summary = summarizeThankYouLedger(
+      updated,
+      currentRecord.name,
+      'all',
+      ''
+    );
+    res.json({
+      records: summary.allRecords,
+      totalHits: summary.totalHits,
+      thankedCount: summary.thankedCount,
+      pendingCount: summary.pendingCount,
+      currentRecord,
+    });
+  });
+
+  const isProd = process.env.NODE_ENV === 'production';
+  if (isProd) {
+    const distDir = path.join(__dirname, 'dist');
+    app.use(express.static(distDir));
+    app.get('*', (_req, res) => {
+      res.sendFile(path.join(distDir, 'index.html'));
+    });
+  } else {
+    const vite = await createViteServer({
+      server: { middlewareMode: true },
+      appType: 'spa',
+    });
+    app.use(vite.middlewares);
+  }
+
+  const port = Number(process.env.PORT) || 3000;
+  app.listen(port, '0.0.0.0', () => {
+    console.log(`Server listening on http://0.0.0.0:${port}`);
+  });
+}
+
+startServer().catch((err) => {
+  console.error('Failed to start server:', err);
+  process.exit(1);
+});

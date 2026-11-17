@@ -1,0 +1,6 @@
+{
+  "name": "B.Ed. Fresher Party Invitation",
+  "description": "Interactive Fresher Party invitation card with Junior name login and live Thank You hit status by name, organised by B.Ed. Second Year.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
