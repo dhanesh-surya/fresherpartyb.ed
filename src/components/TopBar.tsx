@@ -1,4 +1,6 @@
-import { LogOut } from 'lucide-react';
+import { GraduationCap, LogOut } from 'lucide-react';
+import { useState } from 'react';
+import { COLLEGE_BRAND, COLLEGE_LOGO_PATH } from '../utils/invitationLogic';
 
 interface TopBarProps {
   juniorName: string | null;
@@ -6,14 +8,27 @@ interface TopBarProps {
 }
 
 export function TopBar({ juniorName, onSwitchJunior }: TopBarProps) {
+  const [logoFailed, setLogoFailed] = useState(false);
+
   return (
     <header className="sticky top-0 z-30 border-b border-[#E8D5C8] bg-[#FDF8F5]/95 backdrop-blur-sm">
-      <div className="mx-auto flex max-w-[1200px] items-center justify-between gap-8 px-6 py-4">
+      <div className="mx-auto flex max-w-[1200px] items-center justify-between gap-8 px-6 py-3.5">
         <a
           href="#top"
-          className="font-display text-lg font-semibold tracking-tight text-[#7B1633] whitespace-nowrap shrink-0 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#7B1633]"
+          className="inline-flex items-center gap-2.5 font-display text-lg font-semibold tracking-tight text-[#7B1633] whitespace-nowrap shrink-0 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#7B1633]"
         >
-          B.Ed. Second Year
+          {!logoFailed ? (
+            <img
+              src={COLLEGE_LOGO_PATH}
+              alt="Chaitanya College Education, Pamgarh logo"
+              referrerPolicy="no-referrer"
+              onError={() => setLogoFailed(true)}
+              className="h-8 w-8 object-contain shrink-0"
+            />
+          ) : (
+            <GraduationCap className="h-5 w-5 shrink-0" aria-hidden="true" />
+          )}
+          <span>{COLLEGE_BRAND.shortName}</span>
         </a>
 
         {juniorName ? (

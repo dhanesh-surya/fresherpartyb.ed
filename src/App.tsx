@@ -6,7 +6,12 @@ import { JuniorLoginScreen } from './components/JuniorLoginScreen';
 import { ThankYouSection } from './components/ThankYouSection';
 import { TopBar } from './components/TopBar';
 import type { ThankYouRecord } from './types/invitation';
-import { EVENT_INFO, normalizeJuniorName } from './utils/invitationLogic';
+import {
+  COLLEGE_BRAND,
+  COLLEGE_LOGO_PATH,
+  EVENT_INFO,
+  normalizeJuniorName,
+} from './utils/invitationLogic';
 import {
   fetchLedger,
   loginJunior,
@@ -114,7 +119,29 @@ export default function App() {
           serverError={loginError}
         />
       ) : (
-        <main className="mx-auto max-w-[1200px] px-6 py-10 lg:py-12">
+        <main className="mx-auto max-w-[1200px] px-6 py-8 lg:py-10">
+          <div className="mb-8 flex flex-col items-center gap-3 border-b border-[#E8D5C8] pb-6 text-center sm:flex-row sm:justify-between sm:text-left">
+            <div className="flex flex-col items-center gap-3 sm:flex-row">
+              <img
+                src={COLLEGE_LOGO_PATH}
+                alt="Chaitanya College Education, Pamgarh Emblem"
+                referrerPolicy="no-referrer"
+                className="h-14 w-14 object-contain shrink-0"
+              />
+              <div>
+                <p className="font-display text-xl font-bold text-[#7B1633] sm:text-2xl">
+                  {COLLEGE_BRAND.eventTitle}
+                </p>
+                <p className="text-xs font-medium text-[#5C3A45] sm:text-sm">
+                  {COLLEGE_BRAND.organizedBy}
+                </p>
+              </div>
+            </div>
+            <p className="text-xs font-medium text-[#6E4B56] tabular-nums">
+              {EVENT_INFO.dateDisplay} · {EVENT_INFO.venueDisplay}
+            </p>
+          </div>
+
           <div className="grid grid-cols-1 items-start gap-10 lg:grid-cols-12 lg:gap-12">
             <div className="lg:col-span-5">
               <InvitationCardStage
@@ -138,8 +165,8 @@ export default function App() {
           />
 
           <footer className="mt-14 border-t border-[#E8D5C8] pt-6 text-center text-xs text-[#6E4B56]">
-            {EVENT_INFO.organiser} · {EVENT_INFO.dateDisplay} ·{' '}
-            {EVENT_INFO.venueDisplay}
+            {COLLEGE_BRAND.eventTitle} · {COLLEGE_BRAND.organizedBy} ·{' '}
+            {EVENT_INFO.dateDisplay} · {EVENT_INFO.venueDisplay}
           </footer>
         </main>
       )}

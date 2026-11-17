@@ -1,6 +1,11 @@
 import { ArrowRight, GraduationCap } from 'lucide-react';
 import { useState, type FormEvent } from 'react';
-import { EVENT_INFO, normalizeJuniorName } from '../utils/invitationLogic';
+import {
+  COLLEGE_BRAND,
+  COLLEGE_LOGO_PATH,
+  EVENT_INFO,
+  normalizeJuniorName,
+} from '../utils/invitationLogic';
 
 interface JuniorLoginScreenProps {
   onLogin: (name: string) => Promise<void>;
@@ -15,6 +20,7 @@ export function JuniorLoginScreen({
 }: JuniorLoginScreenProps) {
   const [nameInput, setNameInput] = useState('');
   const [validationError, setValidationError] = useState<string | null>(null);
+  const [logoFailed, setLogoFailed] = useState(false);
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -30,10 +36,36 @@ export function JuniorLoginScreen({
   const activeError = validationError ?? serverError;
 
   return (
-    <main className="mx-auto flex min-h-[calc(100vh-73px)] max-w-[1200px] items-center px-6 py-12 lg:py-16">
+    <main className="mx-auto max-w-[1200px] px-6 py-8 lg:py-12">
+      <section
+        aria-label="College event masthead"
+        className="mb-10 flex flex-col items-center border-b border-[#E8D5C8] pb-8 text-center"
+      >
+        {!logoFailed ? (
+          <img
+            src={COLLEGE_LOGO_PATH}
+            alt="Chaitanya College Education, Pamgarh Emblem"
+            referrerPolicy="no-referrer"
+            onError={() => setLogoFailed(true)}
+            className="h-24 w-24 object-contain sm:h-28 sm:w-28"
+          />
+        ) : (
+          <div className="flex h-20 w-20 items-center justify-center rounded-full border border-[#D8B9A6] bg-white text-[#7B1633]">
+            <GraduationCap className="h-9 w-9" aria-hidden="true" />
+          </div>
+        )}
+
+        <p className="mt-4 font-display text-3xl font-bold tracking-tight text-[#7B1633] sm:text-4xl [text-wrap:balance]">
+          {COLLEGE_BRAND.eventTitle}
+        </p>
+        <p className="mt-1.5 max-w-2xl text-sm font-semibold text-[#4E2F39] sm:text-base [text-wrap:balance]">
+          {COLLEGE_BRAND.organizedBy}
+        </p>
+      </section>
+
       <div className="grid w-full grid-cols-1 items-center gap-12 lg:grid-cols-12">
         <div className="lg:col-span-6">
-          <div className="mb-5 inline-flex items-center gap-2 text-xs font-semibold tracking-wide text-[#7B1633]">
+          <div className="mb-4 inline-flex items-center gap-2 text-xs font-semibold tracking-wide text-[#7B1633]">
             <GraduationCap className="h-4 w-4" aria-hidden="true" />
             <span>{EVENT_INFO.organiser}</span>
           </div>

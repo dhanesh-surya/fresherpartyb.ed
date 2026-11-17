@@ -7,6 +7,16 @@ import type {
 export const INVITATION_IMAGE_PATH =
   '/assets/aistudio/WhatsApp_Image_2026-11-17_at_12.07.30_PM_d4401298.jpeg';
 
+export const COLLEGE_LOGO_PATH =
+  '/assets/aistudio/CHAITANYA_COLLEGE_EDUCATION__1__88285ada.png';
+
+export const COLLEGE_BRAND = {
+  eventTitle: 'Fresher Party 2026',
+  organizedBy:
+    'Organized by Department of Education, Chaitanya College Education, Pamgarh',
+  shortName: 'Chaitanya College, Pamgarh',
+} as const;
+
 export const DEFAULT_SEED_RECORDS: ThankYouRecord[] = [
   {
     id: 'ananya verma',
