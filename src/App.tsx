@@ -165,8 +165,21 @@ export default function App() {
           />
 
           <footer className="mt-14 border-t border-[#E8D5C8] pt-6 text-center text-xs text-[#6E4B56]">
-            {COLLEGE_BRAND.eventTitle} · {COLLEGE_BRAND.organizedBy} ·{' '}
-            {EVENT_INFO.dateDisplay} · {EVENT_INFO.venueDisplay}
+            <p>
+              {COLLEGE_BRAND.eventTitle} · {COLLEGE_BRAND.organizedBy} ·{' '}
+              {EVENT_INFO.dateDisplay} · {EVENT_INFO.venueDisplay}
+            </p>
+            <p className="mt-1.5">
+              Developed by{' '}
+              <a
+                href="https://dnstechsupport.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-semibold text-[#7B1633] underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#7B1633]"
+              >
+                dnstechsupport.com
+              </a>
+            </p>
           </footer>
         </main>
       )}

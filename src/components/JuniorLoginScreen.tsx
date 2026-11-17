@@ -78,12 +78,22 @@ export function JuniorLoginScreen({
             A personal invitation to the <strong className="font-semibold text-[#7B1633]">Fresher Party</strong> awaits inside. Sign in with your name to view the card, event timings, formal dress code, and send your Thank You to the seniors.
           </p>
 
-          <div className="mt-6 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-[#6E4B56]">
-            <span>{EVENT_INFO.dateDisplay}</span>
-            <span aria-hidden="true">·</span>
-            <span>{EVENT_INFO.timeDisplay}</span>
-            <span aria-hidden="true">·</span>
-            <span>{EVENT_INFO.venueDisplay}</span>
+          <div className="mt-6">
+            <mark className="relative inline-flex flex-wrap items-center gap-x-2.5 gap-y-1 overflow-hidden rounded-md bg-gradient-to-r from-[#F9DFC7] via-[#F7D3DE] to-[#F9DFC7] px-3.5 py-1.5 text-sm font-semibold text-[#5B1025] shadow-xs tabular-nums">
+              <span
+                aria-hidden="true"
+                className="animate-highlight-sheen pointer-events-none absolute inset-y-0 left-0 w-1/2 bg-gradient-to-r from-transparent via-white/45 to-transparent"
+              />
+              <span className="relative">{EVENT_INFO.dateDisplay}</span>
+              <span aria-hidden="true" className="relative text-[#8C5B2B]">
+                ·
+              </span>
+              <span className="relative">{EVENT_INFO.timeDisplay}</span>
+              <span aria-hidden="true" className="relative text-[#8C5B2B]">
+                ·
+              </span>
+              <span className="relative">{EVENT_INFO.venueDisplay}</span>
+            </mark>
           </div>
         </div>
 
@@ -150,6 +160,22 @@ export function JuniorLoginScreen({
           </form>
         </div>
       </div>
+
+      <footer className="mt-14 border-t border-[#E8D5C8] pt-6 text-center text-xs text-[#6E4B56]">
+        <span>{COLLEGE_BRAND.eventTitle}</span>
+        <span aria-hidden="true" className="mx-2">·</span>
+        <span>
+          Developed by{' '}
+          <a
+            href="https://dnstechsupport.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-semibold text-[#7B1633] underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#7B1633]"
+          >
+            dnstechsupport.com
+          </a>
+        </span>
+      </footer>
     </main>
   );
 }
