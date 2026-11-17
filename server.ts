@@ -6,6 +6,7 @@ import { createServer as createViteServer } from 'vite';
 import type { ThankYouRecord } from './src/types/invitation';
 import {
   applyThankYouHit,
+  DEFAULT_SEED_RECORDS,
   normalizeJuniorName,
   registerJuniorLogin,
   summarizeThankYouLedger,
@@ -17,40 +18,17 @@ const __dirname = path.dirname(__filename);
 const DATA_DIR = path.join(__dirname, '.data');
 const DATA_FILE = path.join(DATA_DIR, 'thank-you-hits.json');
 
-const SEED_RECORDS: ThankYouRecord[] = [
-  {
-    id: 'ananya verma',
-    name: 'Ananya Verma',
-    hits: 2,
-    status: 'Thanked',
-    firstLoggedInAt: '2026-11-16T09:15:00.000Z',
-    lastHitAt: '2026-11-16T10:30:00.000Z',
-  },
-  {
-    id: 'rohan deshmukh',
-    name: 'Rohan Deshmukh',
-    hits: 1,
-    status: 'Thanked',
-    firstLoggedInAt: '2026-11-16T09:45:00.000Z',
-    lastHitAt: '2026-11-16T09:50:00.000Z',
-  },
-  {
-    id: 'priya nair',
-    name: 'Priya Nair',
-    hits: 1,
-    status: 'Thanked',
-    firstLoggedInAt: '2026-11-16T08:40:00.000Z',
-    lastHitAt: '2026-11-16T08:42:00.000Z',
-  },
-];
-
 function ensureStore(): ThankYouRecord[] {
   if (!fs.existsSync(DATA_DIR)) {
     fs.mkdirSync(DATA_DIR, { recursive: true });
   }
   if (!fs.existsSync(DATA_FILE)) {
-    fs.writeFileSync(DATA_FILE, JSON.stringify(SEED_RECORDS, null, 2), 'utf8');
-    return SEED_RECORDS;
+    fs.writeFileSync(
+      DATA_FILE,
+      JSON.stringify(DEFAULT_SEED_RECORDS, null, 2),
+      'utf8'
+    );
+    return DEFAULT_SEED_RECORDS;
   }
   try {
     const raw = fs.readFileSync(DATA_FILE, 'utf8');
@@ -61,8 +39,12 @@ function ensureStore(): ThankYouRecord[] {
   } catch {
     // Fall back to seed records if file is unreadable
   }
-  fs.writeFileSync(DATA_FILE, JSON.stringify(SEED_RECORDS, null, 2), 'utf8');
-  return SEED_RECORDS;
+  fs.writeFileSync(
+    DATA_FILE,
+    JSON.stringify(DEFAULT_SEED_RECORDS, null, 2),
+    'utf8'
+  );
+  return DEFAULT_SEED_RECORDS;
 }
 
 function saveStore(records: ThankYouRecord[]): void {

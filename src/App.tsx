@@ -5,8 +5,13 @@ import { InvitationCardStage } from './components/InvitationCardStage';
 import { JuniorLoginScreen } from './components/JuniorLoginScreen';
 import { ThankYouSection } from './components/ThankYouSection';
 import { TopBar } from './components/TopBar';
-import type { ThankYouLedgerResponse, ThankYouRecord } from './types/invitation';
+import type { ThankYouRecord } from './types/invitation';
 import { EVENT_INFO, normalizeJuniorName } from './utils/invitationLogic';
+import {
+  fetchLedger,
+  loginJunior,
+  submitThankYou,
+} from './utils/thankYouClient';
 
 const STORAGE_KEY = 'bed_fresher_junior_name';
 
@@ -34,19 +39,12 @@ export default function App() {
   const loadLedger = useCallback(async (activeName: string | null) => {
     setIsLoadingLedger(true);
     try {
-      const query = activeName
-        ? `?name=${encodeURIComponent(activeName)}`
-        : '';
-      const response = await fetch(`/api/thank-you${query}`);
-      if (!response.ok) {
-        throw new Error('Could not load Thank You status ledger.');
-      }
-      const data = (await response.json()) as ThankYouLedgerResponse;
+      const data = await fetchLedger(activeName);
       setRecords(data.records);
       setThankYouError(null);
     } catch (err) {
       setThankYouError(
-        err instanceof Error ? err.message : 'Unable to reach server.'
+        err instanceof Error ? err.message : 'Unable to load status ledger.'
       );
     } finally {
       setIsLoadingLedger(false);
@@ -57,23 +55,11 @@ export default function App() {
     setIsLoggingIn(true);
     setLoginError(null);
     try {
-      const response = await fetch('/api/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name }),
-      });
-      const payload = (await response.json()) as Partial<ThankYouLedgerResponse> & {
-        error?: string;
-      };
-      if (!response.ok) {
-        throw new Error(payload.error ?? 'Failed to open invitation.');
-      }
+      const payload = await loginJunior(name);
       const resolvedName = payload.currentRecord?.name ?? name;
       window.localStorage.setItem(STORAGE_KEY, resolvedName);
       setJuniorName(resolvedName);
-      if (Array.isArray(payload.records)) {
-        setRecords(payload.records);
-      }
+      setRecords(payload.records);
       setThankYouError(null);
     } catch (err) {
       setLoginError(
@@ -99,20 +85,8 @@ export default function App() {
     setIsSendingThankYou(true);
     setThankYouError(null);
     try {
-      const response = await fetch('/api/thank-you', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: juniorName }),
-      });
-      const payload = (await response.json()) as Partial<ThankYouLedgerResponse> & {
-        error?: string;
-      };
-      if (!response.ok) {
-        throw new Error(payload.error ?? 'Failed to record Thank You.');
-      }
-      if (Array.isArray(payload.records)) {
-        setRecords(payload.records);
-      }
+      const payload = await submitThankYou(juniorName);
+      setRecords(payload.records);
     } catch (err) {
       setThankYouError(
         err instanceof Error ? err.message : 'Could not save Thank You hit.'

@@ -5,7 +5,34 @@ import type {
 } from '../types/invitation';
 
 export const INVITATION_IMAGE_PATH =
-  '/assets/aistudio/WhatsApp_Image_2026-11-16_at_3.27.04_PM_c2921320.jpeg';
+  '/assets/aistudio/WhatsApp_Image_2026-11-17_at_12.07.30_PM_d4401298.jpeg';
+
+export const DEFAULT_SEED_RECORDS: ThankYouRecord[] = [
+  {
+    id: 'ananya verma',
+    name: 'Ananya Verma',
+    hits: 2,
+    status: 'Thanked',
+    firstLoggedInAt: '2026-11-16T09:15:00.000Z',
+    lastHitAt: '2026-11-16T10:30:00.000Z',
+  },
+  {
+    id: 'rohan deshmukh',
+    name: 'Rohan Deshmukh',
+    hits: 1,
+    status: 'Thanked',
+    firstLoggedInAt: '2026-11-16T09:45:00.000Z',
+    lastHitAt: '2026-11-16T09:50:00.000Z',
+  },
+  {
+    id: 'priya nair',
+    name: 'Priya Nair',
+    hits: 1,
+    status: 'Thanked',
+    firstLoggedInAt: '2026-11-16T08:40:00.000Z',
+    lastHitAt: '2026-11-16T08:42:00.000Z',
+  },
+];
 
 export const EVENT_INFO = {
   kicker: 'A Heartfelt Invitation',
